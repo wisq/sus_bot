@@ -1,25 +1,9 @@
 defmodule SusBot.Commands do
-  use SusBot.Commands.Def
+  alias __MODULE__, as: C
 
-  @desc "play music"
-  @opts [
-    %{
-      name: "url",
-      description: "URL to play",
-      type: Nostrum.Constants.ApplicationCommandOptionType.string(),
-      required: true
-    }
-  ]
+  @commands %{
+    "susplay" => C.Play
+  }
 
-  defcommand susplay(event, %{url: url}) do
-    response = %{
-      type: 4,
-      data: %{
-        flags: 64,
-        content: "I got this URL: #{inspect(url)}"
-      }
-    }
-
-    Nostrum.Api.create_interaction_response!(event, response)
-  end
+  def commands, do: @commands
 end

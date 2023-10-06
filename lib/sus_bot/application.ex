@@ -17,6 +17,7 @@ defmodule SusBot.Application do
   def bot_children() do
     if config(:start_bot) do
       [
+        {Nosedrum.Storage.Dispatcher, name: Nosedrum.Storage.Dispatcher},
         SusBot.Consumer
       ]
     else
