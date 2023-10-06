@@ -9,7 +9,16 @@ defmodule SusBot.Consumer.GuildAvailable do
   def handle(guild) do
     Logger.info("Now active on guild ##{guild.id}: #{guild.name}")
 
-    commands = SusBot.Commands.commands()
+    commands =
+      case SusBot.Player.available?(guild.id) do
+        true ->
+          SusBot.Commands.commands()
+
+        false ->
+          Logger.warning("No player configured for #{guild.name}.")
+          %{}
+      end
+
     register_commands(commands, guild)
     cleanup_old_commands(commands, guild)
   end
