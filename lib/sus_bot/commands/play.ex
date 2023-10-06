@@ -1,4 +1,7 @@
 defmodule SusBot.Commands.Play do
+  alias SusBot.Player
+  alias Nostrum.Struct.Interaction
+
   @behaviour Nosedrum.ApplicationCommand
 
   @impl true
@@ -20,12 +23,20 @@ defmodule SusBot.Commands.Play do
   end
 
   @impl true
-  def command(interaction) do
+  def command(%Interaction{} = interaction) do
     [%{name: "url", value: url}] = interaction.data.options
 
     [
-      content: "Got URL: #{inspect(url)}",
+      type: {:deferred_channel_message_with_source, {&fetch/2, [url, interaction.user]}},
       ephemeral?: true
+    ]
+  end
+
+  defp fetch(url, user) do
+    entry = Player.Entry.fetch(url, user)
+
+    [
+      content: "Got entry: ```\n#{inspect(entry, pretty: true)}\n```"
     ]
   end
 end
