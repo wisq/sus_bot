@@ -24,3 +24,7 @@ sus_bot-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Secrets (e.g. bot token)
+/.secrets/
+/.env.*
