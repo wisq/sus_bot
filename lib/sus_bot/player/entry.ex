@@ -4,6 +4,7 @@ defmodule SusBot.Player.Entry do
 
   @enforce_keys [:title, :url, :added_by]
   defstruct(
+    id: nil,
     title: nil,
     thumbnail: nil,
     url: nil,
@@ -13,12 +14,13 @@ defmodule SusBot.Player.Entry do
   def fetch(uri, %User{} = user) when is_binary(uri) do
     with {:ok, uri} <- parse_http_uri(uri),
          {:ok, data} <- yt_dlp(uri) do
-      %Entry{
-        title: Map.fetch!(data, "title"),
-        thumbnail: Map.get(data, "thumbnail"),
-        url: Map.fetch!(data, "webpage_url"),
-        added_by: user.username
-      }
+      {:ok,
+       %Entry{
+         title: Map.fetch!(data, "title"),
+         thumbnail: Map.get(data, "thumbnail"),
+         url: Map.fetch!(data, "webpage_url"),
+         added_by: user.username
+       }}
     end
   end
 

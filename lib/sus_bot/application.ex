@@ -18,6 +18,7 @@ defmodule SusBot.Application do
     if config(:start_bot) do
       [
         {Nosedrum.Storage.Dispatcher, name: Nosedrum.Storage.Dispatcher},
+        {DynamicSupervisor, name: SusBot.Player.supervisor()},
         SusBot.Consumer
       ]
     else

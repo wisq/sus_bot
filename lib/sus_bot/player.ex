@@ -1,5 +1,13 @@
 defmodule SusBot.Player do
   use GenServer
+  require Logger
+  alias SusBot.Player.Entry
+
+  alias Nostrum.Voice
+  alias Nostrum.Cache.ChannelCache
+
+  @supervisor SusBot.Player.Supervisor
+  def supervisor, do: @supervisor
 
   defmodule Config do
     @enforce_keys [:status_channel]
@@ -14,10 +22,109 @@ defmodule SusBot.Player do
     end
   end
 
+  defmodule State do
+    @enforce_keys [:guild_id, :config]
+    defstruct(
+      guild_id: nil,
+      config: nil,
+      playing: nil,
+      next_id: 1,
+      queue: :queue.new()
+    )
+  end
+
   @configs Application.compile_env(:sus_bot, __MODULE__, []) |> Config.parse()
 
   def available?(guild_id), do: Map.has_key?(@configs, guild_id)
 
+  def append(guild_id, %Entry{} = entry, channel_id)
+      when is_integer(guild_id) and is_integer(channel_id) do
+    with {:ok, pid} <- launch(guild_id, channel_id) do
+      GenServer.call(pid, {:append, entry})
+    end
+  end
+
+  def wakeup(guild_id) do
+    player_name(guild_id)
+    |> GenServer.cast(:wakeup)
+  end
+
+  defp launch(guild_id, channel_id) do
+    opts = [guild_id: guild_id, channel_id: channel_id]
+
+    case DynamicSupervisor.start_child(@supervisor, {__MODULE__, opts}) do
+      {:ok, pid} -> {:ok, pid}
+      {:error, {:already_started, pid}} -> {:ok, pid}
+    end
+  end
+
+  def start_link(opts) do
+    {guild_id, opts} = Keyword.pop!(opts, :guild_id)
+    {channel_id, opts} = Keyword.pop!(opts, :channel_id)
+    config = Map.fetch!(@configs, guild_id)
+    opts = Keyword.put_new(opts, :name, player_name(guild_id))
+
+    GenServer.start_link(__MODULE__, {guild_id, channel_id, config}, opts)
+  end
+
+  defp player_name(guild_id) when is_integer(guild_id), do: :"susbot_player_#{guild_id}"
+
   @impl true
-  def init(_), do: {:ok, nil}
+  def init({guild_id, channel_id, config}) do
+    ensure_channel_cached(channel_id)
+    Voice.join_channel(guild_id, channel_id)
+
+    {:ok,
+     %State{
+       guild_id: guild_id,
+       config: config
+     }}
+  end
+
+  @impl true
+  def handle_call({:append, entry}, _from, state) do
+    id = state.next_id
+    entry = %Entry{entry | id: id}
+    state = %State{state | next_id: id + 1, queue: :queue.in(entry, state.queue)}
+
+    {:reply, {:ok, id}, state, {:continue, :play_next}}
+  end
+
+  @impl true
+  def handle_cast(:wakeup, state) do
+    IO.inspect(state)
+    {:noreply, state, {:continue, :play_next}}
+  end
+
+  @impl true
+  def handle_continue(:play_next, state) do
+    cond do
+      Voice.playing?(state.guild_id) ->
+        Logger.debug("[Voice #{state.guild_id}] Already playing")
+        {:noreply, state}
+
+      !Voice.ready?(state.guild_id) ->
+        Logger.debug("[Voice #{state.guild_id}] Not ready")
+        {:noreply, state}
+
+      true ->
+        case :queue.out(state.queue) do
+          {{:value, entry}, queue} ->
+            Logger.info("[Voice #{state.guild_id}] Playing #{inspect(entry)}")
+            Voice.play(state.guild_id, entry.url, :ytdl)
+            {:noreply, %State{state | playing: entry, queue: queue}}
+
+          {:empty, _} ->
+            Logger.info("[Voice #{state.guild_id}] Empty queue")
+            {:noreply, state}
+        end
+    end
+  end
+
+  defp ensure_channel_cached(channel_id) do
+    case ChannelCache.get(channel_id) do
+      {:ok, _} -> :ok
+      {:error, :not_found} -> Nostrum.Api.get_channel!(channel_id) |> ChannelCache.create()
+    end
+  end
 end
