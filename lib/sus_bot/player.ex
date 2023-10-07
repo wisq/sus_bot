@@ -92,7 +92,6 @@ defmodule SusBot.Player do
 
   @impl true
   def handle_cast(:wakeup, state) do
-    IO.inspect(state)
     {:noreply, state, {:continue, :play_next}}
   end
 
@@ -110,13 +109,13 @@ defmodule SusBot.Player do
       true ->
         case :queue.out(state.queue) do
           {{:value, entry}, queue} ->
-            Logger.info("[Voice #{state.guild_id}] Playing #{inspect(entry)}")
-            Voice.play(state.guild_id, entry.url, :ytdl)
+            Logger.debug("[Voice #{state.guild_id}] Playing #{inspect(entry, pretty: true)}")
+            Voice.play(state.guild_id, entry.url, entry.play_type)
             {:noreply, %State{state | playing: entry, queue: queue}}
 
           {:empty, _} ->
-            Logger.info("[Voice #{state.guild_id}] Empty queue")
-            {:noreply, state}
+            Logger.debug("[Voice #{state.guild_id}] Empty queue")
+            {:noreply, %State{state | playing: nil}}
         end
     end
   end
