@@ -47,16 +47,16 @@ defmodule SusBot.Player do
     end
   end
 
-  def stop(guild_id) do
-    case player_name(guild_id) |> GenServer.whereis() do
-      pid when is_pid(pid) -> GenServer.call(pid, :stop)
-      nil -> {:error, :not_running}
-    end
-  end
+  def wakeup(guild_id), do: cast(guild_id, :wakeup)
 
-  def wakeup(guild_id) do
-    player_name(guild_id)
-    |> GenServer.cast(:wakeup)
+  def stop(guild_id), do: call(guild_id, :stop)
+
+  def leave(guild_id) do
+    try do
+      :ok = player_name(guild_id) |> GenServer.stop()
+    catch
+      :exit, {:noproc, _} -> {:error, :not_running}
+    end
   end
 
   defp launch(guild_id, channel_id) do
@@ -65,6 +65,18 @@ defmodule SusBot.Player do
     case DynamicSupervisor.start_child(@supervisor, {__MODULE__, opts}) do
       {:ok, pid} -> {:ok, pid}
       {:error, {:already_started, pid}} -> {:ok, pid}
+    end
+  end
+
+  defp cast(guild_id, message) do
+    player_name(guild_id) |> GenServer.cast(message)
+  end
+
+  defp call(guild_id, message, timeout \\ 5000) do
+    try do
+      player_name(guild_id) |> GenServer.call(message, timeout)
+    catch
+      :exit, {:noproc, _} -> {:error, :not_running}
     end
   end
 

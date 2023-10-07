@@ -3,7 +3,8 @@ defmodule SusBot.Commands do
 
   @commands %{
     "play" => C.Play,
-    "stop" => C.Stop
+    "stop" => C.Stop,
+    "leave" => C.Leave
   }
 
   def commands, do: @commands

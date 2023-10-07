@@ -1,20 +1,19 @@
-defmodule SusBot.Commands.Stop do
+defmodule SusBot.Commands.Leave do
   alias SusBot.Player
   alias Nostrum.Struct.Interaction
 
   @behaviour Nosedrum.ApplicationCommand
 
   @impl true
-  def description, do: "Stops playing music."
+  def description, do: "Stops playback and leaves the voice channel."
 
   @impl true
   def type, do: :slash
 
   @impl true
   def command(%Interaction{} = inter) do
-    case Player.stop(inter.guild_id) do
-      :ok -> [content: "Playback stopped."]
-      {:error, :not_playing} -> [content: "Nothing is currently playing.", ephemeral?: true]
+    case Player.leave(inter.guild_id) do
+      :ok -> [content: "Player terminated."]
       {:error, :not_running} -> [content: "Not currently active.", ephemeral?: true]
     end
   end

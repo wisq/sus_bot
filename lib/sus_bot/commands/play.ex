@@ -6,7 +6,7 @@ defmodule SusBot.Commands.Play do
   @behaviour Nosedrum.ApplicationCommand
 
   @impl true
-  def description, do: "play music"
+  def description, do: "Add a URL to the queue."
 
   @impl true
   def type, do: :slash
@@ -16,7 +16,7 @@ defmodule SusBot.Commands.Play do
     [
       %{
         name: "url",
-        description: "URL to play",
+        description: "URL to play.  Supports YouTube, Twitch, direct links, etc.",
         type: :string,
         required: true
       }
