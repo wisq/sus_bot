@@ -1,10 +1,10 @@
 defmodule SusBot.Player do
   use GenServer
   require Logger
-  alias SusBot.Player.Entry
 
   alias Nostrum.Voice
   alias Nostrum.Cache.ChannelCache
+  alias SusBot.Player.{Playlist, Entry}
 
   @supervisor SusBot.Player.Supervisor
   def supervisor, do: @supervisor
@@ -29,7 +29,7 @@ defmodule SusBot.Player do
       config: nil,
       playing: nil,
       next_id: 1,
-      queue: :queue.new()
+      playlist: Playlist.new()
     )
   end
 
@@ -85,7 +85,7 @@ defmodule SusBot.Player do
   def handle_call({:append, entry}, _from, state) do
     id = state.next_id
     entry = %Entry{entry | id: id}
-    state = %State{state | next_id: id + 1, queue: :queue.in(entry, state.queue)}
+    state = %State{state | next_id: id + 1, playlist: Playlist.append(state.playlist, entry)}
 
     {:reply, {:ok, id}, state, {:continue, :play_next}}
   end
@@ -107,14 +107,14 @@ defmodule SusBot.Player do
         {:noreply, state}
 
       true ->
-        case :queue.out(state.queue) do
-          {{:value, entry}, queue} ->
+        case Playlist.pop_next(state.playlist) do
+          {entry, new_playlist} ->
             Logger.debug("[Voice #{state.guild_id}] Playing #{inspect(entry, pretty: true)}")
             Voice.play(state.guild_id, entry.url, entry.play_type)
-            {:noreply, %State{state | playing: entry, queue: queue}}
+            {:noreply, %State{state | playing: entry, playlist: new_playlist}}
 
-          {:empty, _} ->
-            Logger.debug("[Voice #{state.guild_id}] Empty queue")
+          :error ->
+            Logger.debug("[Voice #{state.guild_id}] Empty playlist")
             {:noreply, %State{state | playing: nil}}
         end
     end
