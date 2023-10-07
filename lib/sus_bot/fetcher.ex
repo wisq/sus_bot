@@ -1,15 +1,47 @@
 defmodule SusBot.Fetcher do
-  alias Porcelain.Process
+  def fetch(%URI{} = uri, timeout \\ 10000) do
+    port = open_port("yt-dlp", ["-J", URI.to_string(uri)])
+    os_pid = Port.info(port) |> Keyword.fetch!(:os_pid)
 
-  def fetch(%URI{} = uri, timeout \\ 5000) do
-    with %Process{} = p <- Porcelain.spawn("yt-dlp", ["-J", URI.to_string(uri)]),
-         {:ok, %{status: 0, out: json}} <- Porcelain.Process.await(p, timeout) do
-      Jason.decode(json)
-    else
-      {:error, :timeout} -> {:error, :fetcher_timeout}
-      {:error, "Command not found: " <> _} -> {:error, :fetcher_not_found}
-      {:ok, %{status: n}} when n > 0 -> {:error, :fetcher_failed}
+    spawn_link(fn ->
+      Process.sleep(timeout)
+      System.cmd("kill", ["#{os_pid}"], stderr_to_stdout: true)
+      Process.sleep(1000)
+      System.cmd("kill", ["-9", "#{os_pid}"], stderr_to_stdout: true)
+    end)
+
+    case receive_loop(port, []) do
+      {0, json} -> Jason.decode(json)
+      # got sigterm
+      {143, _} -> {:error, :fetcher_timeout}
+      # got sigkill
+      {137, _} -> {:error, :fetcher_timeout}
+      # non-zero exit status
+      {n, _} when n > 0 -> {:error, :fetcher_failed}
     end
-    |> IO.inspect()
+  end
+
+  defp receive_loop(port, buf) do
+    receive do
+      {^port, {:data, data}} -> receive_loop(port, [data | buf])
+      {^port, {:exit_status, n}} -> {n, Enum.reverse(buf) |> IO.iodata_to_binary()}
+    end
+  end
+
+  defp find_executable(cmd) do
+    case System.find_executable(cmd) do
+      nil -> {:error, :fetcher_not_found}
+      path when is_binary(path) -> {:ok, path}
+    end
+  end
+
+  defp open_port(cmd, args) do
+    {:ok, exec} = find_executable(cmd)
+
+    Port.open({:spawn_executable, String.to_charlist(exec)}, [
+      {:args, Enum.map(args, &String.to_charlist/1)},
+      :exit_status,
+      :binary
+    ])
   end
 end
