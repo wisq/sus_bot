@@ -6,7 +6,8 @@ defmodule SusBot.Player do
   alias Nostrum.Voice
   alias Nostrum.Cache.ChannelCache
 
-  alias SusBot.Player.{Playlist, Entry}
+  alias SusBot.Playlist
+  alias SusBot.Playlist.Entry
   alias SusBot.Embeds.NowPlaying
 
   @supervisor SusBot.Player.Supervisor

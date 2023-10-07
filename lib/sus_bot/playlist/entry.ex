@@ -1,4 +1,4 @@
-defmodule SusBot.Player.Entry do
+defmodule SusBot.Playlist.Entry do
   alias Nostrum.Struct.User
   alias SusBot.Fetcher
   alias __MODULE__

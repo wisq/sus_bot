@@ -1,6 +1,6 @@
-defmodule SusBot.Player.Playlist do
+defmodule SusBot.Playlist do
   alias __MODULE__
-  alias SusBot.Player.Entry
+  alias SusBot.Playlist.Entry
 
   defstruct(queue: :queue.new())
 

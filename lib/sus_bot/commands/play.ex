@@ -3,6 +3,7 @@ defmodule SusBot.Commands.Play do
   alias Nostrum.Cache.GuildCache
 
   alias SusBot.Player
+  alias SusBot.Playlist.Entry
   alias SusBot.Embeds
 
   @behaviour Nosedrum.ApplicationCommand
@@ -45,7 +46,7 @@ defmodule SusBot.Commands.Play do
   end
 
   defp queue(url, guild_id, user, channel_id) do
-    with {:ok, fetched} <- Player.Entry.fetch(url, user),
+    with {:ok, fetched} <- Entry.fetch(url, user),
          {:ok, queued} <- Player.append(guild_id, fetched, channel_id) do
       [embeds: [Embeds.Queued.generate(queued)]]
     else

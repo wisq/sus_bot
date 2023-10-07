@@ -1,6 +1,6 @@
 defmodule SusBot.Embeds.Queued do
   alias Nostrum.Struct.Embed
-  alias SusBot.Player.Entry
+  alias SusBot.Playlist.Entry
 
   def generate(%Entry{} = entry) do
     %Embed{}

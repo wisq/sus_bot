@@ -1,6 +1,6 @@
 defmodule SusBot.Embeds.NowPlaying do
   alias Nostrum.Struct.Embed
-  alias SusBot.Player.Entry
+  alias SusBot.Playlist.Entry
 
   import SusBot.Embeds.Common
 
