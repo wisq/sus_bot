@@ -2,192 +2,38 @@ defmodule SusBot.Player do
   use GenServer, restart: :temporary
   require Logger
 
-  alias Nostrum.Api, as: Discord
-  alias Nostrum.Voice
-  alias Nostrum.Cache.ChannelCache
-
-  alias SusBot.Playlist
-  alias SusBot.Playlist.Entry
-  alias SusBot.Embeds.NowPlaying
+  alias __MODULE__, as: P
 
   @supervisor SusBot.Player.Supervisor
   def supervisor, do: @supervisor
 
-  defmodule Config do
-    @enforce_keys [:status_channel]
-    defstruct(status_channel: nil)
+  defdelegate available?(guild_id), to: P.Lifecycle
+  defdelegate start_link(opts), to: P.Lifecycle
 
-    def parse(enum) do
-      enum |> Map.new(&from_config/1)
-    end
-
-    defp from_config({guild_id, fields}) when is_integer(guild_id) do
-      {guild_id, struct!(__MODULE__, fields)}
-    end
-  end
-
-  defmodule State do
-    @enforce_keys [:guild_id, :config]
-    defstruct(
-      guild_id: nil,
-      config: nil,
-      mode: :playing,
-      now_playing: nil,
-      next_id: 1,
-      playlist: Playlist.new()
-    )
-  end
-
-  @configs Application.compile_env(:sus_bot, __MODULE__, []) |> Config.parse()
-
-  def available?(guild_id), do: Map.has_key?(@configs, guild_id)
-
-  def append(guild_id, %Entry{} = entry, channel_id)
-      when is_integer(guild_id) and is_integer(channel_id) do
-    with {:ok, pid} <- launch(guild_id, channel_id) do
-      GenServer.call(pid, {:append, entry})
-    end
-  end
-
-  def wakeup(guild_id), do: cast(guild_id, :wakeup)
-
-  def stop(guild_id), do: call(guild_id, :stop)
-  def skip(guild_id), do: call(guild_id, :skip)
-
-  def leave(guild_id) do
-    try do
-      :ok = player_name(guild_id) |> GenServer.stop()
-    catch
-      :exit, {:noproc, _} -> {:error, :not_running}
-    end
-  end
-
-  defp launch(guild_id, channel_id) do
-    opts = [guild_id: guild_id, channel_id: channel_id]
-
-    case DynamicSupervisor.start_child(@supervisor, {__MODULE__, opts}) do
-      {:ok, pid} -> {:ok, pid}
-      {:error, {:already_started, pid}} -> {:ok, pid}
-    end
-  end
-
-  defp cast(guild_id, message) do
-    player_name(guild_id) |> GenServer.cast(message)
-  end
-
-  defp call(guild_id, message, timeout \\ 5000) do
-    try do
-      player_name(guild_id) |> GenServer.call(message, timeout)
-    catch
-      :exit, {:noproc, _} -> {:error, :not_running}
-    end
-  end
-
-  def start_link(opts) do
-    {guild_id, opts} = Keyword.pop!(opts, :guild_id)
-    {channel_id, opts} = Keyword.pop!(opts, :channel_id)
-    config = Map.fetch!(@configs, guild_id)
-    opts = Keyword.put_new(opts, :name, player_name(guild_id))
-
-    GenServer.start_link(__MODULE__, {guild_id, channel_id, config}, opts)
-  end
-
-  defp player_name(guild_id) when is_integer(guild_id), do: :"susbot_player_#{guild_id}"
+  defdelegate append(guild_id, entry, channel_id), to: P.Append
+  defdelegate skip(guild_id), to: P.Skip
+  defdelegate stop(guild_id), to: P.Stop
+  defdelegate leave(guild_id), to: P.Leave
+  defdelegate wakeup(guild_id), to: P.Playback
 
   @impl true
-  def init({guild_id, channel_id, config}) do
-    ensure_channel_cached(channel_id)
-    Voice.join_channel(guild_id, channel_id)
-
-    {:ok,
-     %State{
-       guild_id: guild_id,
-       config: config
-     }}
-  end
+  defdelegate init(term), to: P.Lifecycle
 
   @impl true
-  def handle_call({:append, entry}, _from, state) do
-    id = state.next_id
-    entry = %Entry{entry | id: id}
-    state = %State{state | next_id: id + 1, playlist: Playlist.append(state.playlist, entry)}
-
-    {:reply, {:ok, entry}, state, {:continue, :play_next}}
-  end
+  def handle_call({:append, entry}, from, state),
+    do: P.Append.handle_call({:append, entry}, from, state)
 
   @impl true
-  def handle_call(:stop, _from, state) do
-    case state.now_playing do
-      %Entry{} ->
-        Voice.stop(state.guild_id)
-        {:reply, :ok, %State{state | now_playing: nil, mode: :stopped}}
-
-      nil ->
-        {:reply, {:error, :stopped}, state}
-    end
-  end
+  def handle_call(:stop, from, state), do: P.Stop.handle_call(:stop, from, state)
+  @impl true
+  def handle_call(:skip, from, state), do: P.Skip.handle_call(:skip, from, state)
 
   @impl true
-  def handle_call(:skip, _from, state) do
-    case state.now_playing do
-      %Entry{} ->
-        Voice.stop(state.guild_id)
-        {:reply, :ok, %State{state | now_playing: nil}, {:continue, :play_next}}
-
-      nil ->
-        {:reply, {:error, :stopped}, state}
-    end
-  end
+  def handle_cast(:wakeup, state), do: P.Playback.handle_cast(:wakeup, state)
 
   @impl true
-  def handle_cast(:wakeup, state) do
-    {:noreply, state, {:continue, :play_next}}
-  end
+  def handle_continue(:play_next, state), do: P.Playback.handle_continue(:play_next, state)
 
   @impl true
-  def handle_continue(:play_next, state) do
-    cond do
-      state.mode != :playing ->
-        Logger.debug("[Voice #{state.guild_id}] Mode is #{inspect(state.mode)}")
-        {:noreply, state}
-
-      Voice.playing?(state.guild_id) ->
-        Logger.debug("[Voice #{state.guild_id}] Already playing")
-        {:noreply, state}
-
-      !Voice.ready?(state.guild_id) ->
-        Logger.debug("[Voice #{state.guild_id}] Not ready")
-        {:noreply, state}
-
-      true ->
-        case Playlist.pop_next(state.playlist) do
-          {entry, new_playlist} ->
-            Logger.debug("[Voice #{state.guild_id}] Playing #{inspect(entry, pretty: true)}")
-
-            c_id = state.config.status_channel
-            Discord.create_message(c_id, embeds: [NowPlaying.generate(entry)])
-            Voice.play(state.guild_id, entry.url, entry.play_type)
-
-            {:noreply, %State{state | now_playing: entry, playlist: new_playlist}}
-
-          :error ->
-            Logger.debug("[Voice #{state.guild_id}] Empty playlist")
-            {:noreply, %State{state | now_playing: nil}}
-        end
-    end
-  end
-
-  @impl true
-  def terminate(_reason, state) do
-    Voice.leave_channel(state.guild_id)
-  end
-
-  # Voice requires the channel be cached,
-  # and for some reason, that's not happening automatically.
-  defp ensure_channel_cached(channel_id) do
-    case ChannelCache.get(channel_id) do
-      {:ok, _} -> :ok
-      {:error, :not_found} -> Discord.get_channel!(channel_id) |> ChannelCache.create()
-    end
-  end
+  defdelegate terminate(reason, state), to: P.Lifecycle
 end
