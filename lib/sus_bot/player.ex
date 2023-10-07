@@ -47,6 +47,13 @@ defmodule SusBot.Player do
     end
   end
 
+  def stop(guild_id) do
+    case player_name(guild_id) |> GenServer.whereis() do
+      pid when is_pid(pid) -> GenServer.call(pid, :stop)
+      nil -> {:error, :not_running}
+    end
+  end
+
   def wakeup(guild_id) do
     player_name(guild_id)
     |> GenServer.cast(:wakeup)
@@ -91,6 +98,18 @@ defmodule SusBot.Player do
     state = %State{state | next_id: id + 1, playlist: Playlist.append(state.playlist, entry)}
 
     {:reply, {:ok, id}, state, {:continue, :play_next}}
+  end
+
+  @impl true
+  def handle_call(:stop, _from, state) do
+    case state.playing do
+      %Entry{} ->
+        Voice.stop(state.guild_id)
+        {:reply, :ok, %State{state | playing: nil}}
+
+      nil ->
+        {:reply, {:error, :not_playing}, state}
+    end
   end
 
   @impl true
