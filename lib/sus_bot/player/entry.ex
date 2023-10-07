@@ -9,7 +9,8 @@ defmodule SusBot.Player.Entry do
     thumbnail: nil,
     url: nil,
     play_type: nil,
-    added_by: nil
+    added_by: nil,
+    duration: nil
   )
 
   def fetch(uri, %User{} = user) when is_binary(uri) do
@@ -19,8 +20,9 @@ defmodule SusBot.Player.Entry do
       {:ok,
        %Entry{
          title: Map.fetch!(data, "title"),
-         thumbnail: Map.get(data, "thumbnail"),
          url: Map.fetch!(data, "webpage_url"),
+         thumbnail: Map.get(data, "thumbnail"),
+         duration: Map.get(data, "duration"),
          play_type: play_type,
          added_by: user.username
        }}

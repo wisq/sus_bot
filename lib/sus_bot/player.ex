@@ -2,9 +2,12 @@ defmodule SusBot.Player do
   use GenServer
   require Logger
 
+  alias Nostrum.Api, as: Discord
   alias Nostrum.Voice
   alias Nostrum.Cache.ChannelCache
+
   alias SusBot.Player.{Playlist, Entry}
+  alias SusBot.Embeds.NowPlaying
 
   @supervisor SusBot.Player.Supervisor
   def supervisor, do: @supervisor
@@ -110,7 +113,11 @@ defmodule SusBot.Player do
         case Playlist.pop_next(state.playlist) do
           {entry, new_playlist} ->
             Logger.debug("[Voice #{state.guild_id}] Playing #{inspect(entry, pretty: true)}")
+
+            c_id = state.config.status_channel
+            Discord.create_message(c_id, embeds: [NowPlaying.generate(entry)])
             Voice.play(state.guild_id, entry.url, entry.play_type)
+
             {:noreply, %State{state | playing: entry, playlist: new_playlist}}
 
           :error ->
@@ -120,10 +127,12 @@ defmodule SusBot.Player do
     end
   end
 
+  # Voice requires the channel be cached,
+  # and for some reason, that's not happening automatically.
   defp ensure_channel_cached(channel_id) do
     case ChannelCache.get(channel_id) do
       {:ok, _} -> :ok
-      {:error, :not_found} -> Nostrum.Api.get_channel!(channel_id) |> ChannelCache.create()
+      {:error, :not_found} -> Discord.get_channel!(channel_id) |> ChannelCache.create()
     end
   end
 end
