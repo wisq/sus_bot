@@ -1,5 +1,5 @@
 defmodule SusBot.Player do
-  use GenServer
+  use GenServer, restart: :temporary
   require Logger
 
   alias Nostrum.Api, as: Discord
@@ -30,7 +30,8 @@ defmodule SusBot.Player do
     defstruct(
       guild_id: nil,
       config: nil,
-      playing: nil,
+      mode: :playing,
+      now_playing: nil,
       next_id: 1,
       playlist: Playlist.new()
     )
@@ -50,6 +51,7 @@ defmodule SusBot.Player do
   def wakeup(guild_id), do: cast(guild_id, :wakeup)
 
   def stop(guild_id), do: call(guild_id, :stop)
+  def skip(guild_id), do: call(guild_id, :skip)
 
   def leave(guild_id) do
     try do
@@ -109,18 +111,30 @@ defmodule SusBot.Player do
     entry = %Entry{entry | id: id}
     state = %State{state | next_id: id + 1, playlist: Playlist.append(state.playlist, entry)}
 
-    {:reply, {:ok, id}, state, {:continue, :play_next}}
+    {:reply, {:ok, entry}, state, {:continue, :play_next}}
   end
 
   @impl true
   def handle_call(:stop, _from, state) do
-    case state.playing do
+    case state.now_playing do
       %Entry{} ->
         Voice.stop(state.guild_id)
-        {:reply, :ok, %State{state | playing: nil}}
+        {:reply, :ok, %State{state | now_playing: nil, mode: :stopped}}
 
       nil ->
-        {:reply, {:error, :not_playing}, state}
+        {:reply, {:error, :stopped}, state}
+    end
+  end
+
+  @impl true
+  def handle_call(:skip, _from, state) do
+    case state.now_playing do
+      %Entry{} ->
+        Voice.stop(state.guild_id)
+        {:reply, :ok, %State{state | now_playing: nil}, {:continue, :play_next}}
+
+      nil ->
+        {:reply, {:error, :stopped}, state}
     end
   end
 
@@ -132,6 +146,10 @@ defmodule SusBot.Player do
   @impl true
   def handle_continue(:play_next, state) do
     cond do
+      state.mode != :playing ->
+        Logger.debug("[Voice #{state.guild_id}] Mode is #{inspect(state.mode)}")
+        {:noreply, state}
+
       Voice.playing?(state.guild_id) ->
         Logger.debug("[Voice #{state.guild_id}] Already playing")
         {:noreply, state}
@@ -149,13 +167,18 @@ defmodule SusBot.Player do
             Discord.create_message(c_id, embeds: [NowPlaying.generate(entry)])
             Voice.play(state.guild_id, entry.url, entry.play_type)
 
-            {:noreply, %State{state | playing: entry, playlist: new_playlist}}
+            {:noreply, %State{state | now_playing: entry, playlist: new_playlist}}
 
           :error ->
             Logger.debug("[Voice #{state.guild_id}] Empty playlist")
-            {:noreply, %State{state | playing: nil}}
+            {:noreply, %State{state | now_playing: nil}}
         end
     end
+  end
+
+  @impl true
+  def terminate(_reason, state) do
+    Voice.leave_channel(state.guild_id)
   end
 
   # Voice requires the channel be cached,

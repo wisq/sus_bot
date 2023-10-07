@@ -1,7 +1,9 @@
 defmodule SusBot.Commands.Play do
-  alias SusBot.Player
   alias Nostrum.Struct.Interaction
   alias Nostrum.Cache.GuildCache
+
+  alias SusBot.Player
+  alias SusBot.Embeds
 
   @behaviour Nosedrum.ApplicationCommand
 
@@ -28,18 +30,8 @@ defmodule SusBot.Commands.Play do
     [%{name: "url", value: url}] = inter.data.options
 
     with {:ok, channel_id} <- find_voice_channel_id(inter.guild_id, inter.user.id) do
-      [
-        type:
-          {:deferred_channel_message_with_source,
-           {&queue/4,
-            [
-              url,
-              inter.guild_id,
-              inter.user,
-              channel_id
-            ]}},
-        ephemeral?: true
-      ]
+      callback = {&queue/4, [url, inter.guild_id, inter.user, channel_id]}
+      [type: {:deferred_channel_message_with_source, callback}]
     end
   end
 
@@ -53,13 +45,11 @@ defmodule SusBot.Commands.Play do
   end
 
   defp queue(url, guild_id, user, channel_id) do
-    rval =
-      with {:ok, entry} <- Player.Entry.fetch(url, user) do
-        Player.append(guild_id, entry, channel_id)
-      end
-
-    [
-      content: "```\n#{inspect(rval, pretty: true)}\n```"
-    ]
+    with {:ok, fetched} <- Player.Entry.fetch(url, user),
+         {:ok, queued} <- Player.append(guild_id, fetched, channel_id) do
+      [embeds: [Embeds.Queued.generate(queued)]]
+    else
+      e -> [content: "```\n#{inspect(e, pretty: true)}\n```"]
+    end
   end
 end

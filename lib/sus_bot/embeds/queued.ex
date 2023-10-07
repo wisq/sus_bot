@@ -1,17 +1,13 @@
-defmodule SusBot.Embeds.NowPlaying do
+defmodule SusBot.Embeds.Queued do
   alias Nostrum.Struct.Embed
   alias SusBot.Player.Entry
 
-  import SusBot.Embeds.Common
-
   def generate(%Entry{} = entry) do
     %Embed{}
-    |> Embed.put_title("Now Playing")
+    |> Embed.put_title("Track Added")
     |> Embed.put_description(entry.title)
     |> Embed.put_url(entry.url)
     |> maybe_put_thumbnail(entry.thumbnail)
-    |> Embed.put_field("Added By", entry.added_by, true)
-    |> Embed.put_field("Duration", format_duration(entry.duration), true)
   end
 
   defp maybe_put_thumbnail(embed, nil), do: embed
