@@ -1,5 +1,6 @@
 defmodule SusBot.Player.Entry do
   alias Nostrum.Struct.User
+  alias SusBot.Fetcher
   alias __MODULE__
 
   @enforce_keys [:title, :url, :play_type, :added_by]
@@ -15,7 +16,7 @@ defmodule SusBot.Player.Entry do
 
   def fetch(uri, %User{} = user) when is_binary(uri) do
     with {:ok, uri} <- parse_http_uri(uri),
-         {:ok, data} <- yt_dlp(uri),
+         {:ok, data} <- Fetcher.fetch(uri),
          {:ok, play_type} <- detect_play_type(data) do
       {:ok,
        %Entry{
@@ -33,13 +34,6 @@ defmodule SusBot.Player.Entry do
     case URI.parse(uri) do
       %URI{scheme: s} = u when s in ["http", "https"] -> {:ok, u}
       _ -> {:error, "Not an HTTP(S) URI: #{inspect(uri)}"}
-    end
-  end
-
-  defp yt_dlp(%URI{} = uri) do
-    case System.cmd("yt-dlp", ["-J", URI.to_string(uri)]) do
-      {json, 0} -> Poison.decode(json)
-      {output, _} -> {:error, output}
     end
   end
 

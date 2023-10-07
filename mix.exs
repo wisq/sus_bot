@@ -26,7 +26,8 @@ defmodule SusBot.MixProject do
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
       {:nostrum, "~> 0.8"},
       {:nosedrum, "~> 0.5"},
-      {:poison, "~> 5.0"}
+      {:jason, "~> 1.4"},
+      {:porcelain, "~> 2.0"}
     ]
   end
 end
