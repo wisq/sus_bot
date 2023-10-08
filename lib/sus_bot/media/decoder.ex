@@ -12,10 +12,12 @@ defmodule SusBot.Media.Decoder do
 
   defp decode_video(data, play_type) do
     with {:ok, title} <- map_fetch(data, "title"),
+         {:ok, channel} <- map_fetch(data, "channel"),
          {:ok, url} <- map_fetch(data, ["webpage_url", "url"]) do
       {:ok,
        %Track{
          title: title,
+         channel: channel,
          url: url,
          thumbnail: best_thumbnail(data),
          duration: Map.get(data, "duration"),
@@ -26,12 +28,14 @@ defmodule SusBot.Media.Decoder do
 
   defp decode_playlist(data, play_type) do
     with {:ok, title} <- map_fetch(data, "title"),
+         {:ok, channel} <- map_fetch(data, "channel"),
          {:ok, url} <- map_fetch(data, "webpage_url"),
          {:ok, entries} <- map_fetch(data, "entries"),
          {:ok, tracks} <- entries |> enum_map(&decode_video(&1, play_type)) do
       {:ok,
        %Playlist{
          title: title,
+         channel: channel,
          url: url,
          thumbnail: best_thumbnail(data),
          tracks: tracks
