@@ -3,7 +3,7 @@ defmodule SusBot.Commands.Play do
   alias Nostrum.Cache.GuildCache
 
   alias SusBot.Player
-  alias SusBot.Playlist.Entry
+  alias SusBot.Track
   alias SusBot.Embeds
 
   @behaviour Nosedrum.ApplicationCommand
@@ -46,11 +46,20 @@ defmodule SusBot.Commands.Play do
   end
 
   defp queue(url, guild_id, user, channel_id) do
-    with {:ok, fetched} <- Entry.fetch(url, user),
-         {:ok, queued} <- Player.append(guild_id, fetched, channel_id) do
+    with {:ok, uri} <- parse_http_uri(url),
+         {:ok, json} <- Track.Fetcher.fetch(uri),
+         {:ok, tracks} <- Track.Decoder.decode(json),
+         {:ok, queued} <- Player.append(guild_id, channel_id, tracks, user) do
       [embeds: [Embeds.Queued.generate(queued)]]
     else
       e -> [content: "```\n#{inspect(e, pretty: true)}\n```"]
+    end
+  end
+
+  defp parse_http_uri(url) do
+    case URI.parse(url) do
+      %URI{scheme: s} = u when s in ["http", "https"] -> {:ok, u}
+      _ -> {:error, "Not an HTTP(S) URI: #{inspect(url)}"}
     end
   end
 end

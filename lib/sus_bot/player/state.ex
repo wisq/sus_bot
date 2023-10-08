@@ -1,5 +1,5 @@
 defmodule SusBot.Player.State do
-  alias SusBot.Playlist
+  alias SusBot.Queue
 
   @enforce_keys [:guild_id, :config]
   defstruct(
@@ -8,6 +8,6 @@ defmodule SusBot.Player.State do
     mode: :playing,
     now_playing: nil,
     next_id: 1,
-    playlist: Playlist.new()
+    queue: Queue.new()
   )
 end

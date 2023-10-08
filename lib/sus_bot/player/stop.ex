@@ -1,7 +1,7 @@
 defmodule SusBot.Player.Stop do
   alias Nostrum.Voice
   alias SusBot.Player.{Common, State}
-  alias SusBot.Playlist.Entry
+  alias SusBot.Queue.Entry
 
   def stop(guild_id) do
     Common.call(guild_id, :stop)

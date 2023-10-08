@@ -1,11 +1,15 @@
-defmodule SusBot.Fetcher do
+defmodule SusBot.Track.Fetcher do
   require Logger
+
+  @options [
+    "--flat-playlist"
+  ]
 
   def fetch(%URI{} = uri, timeout \\ 10000) do
     uri = URI.to_string(uri)
 
     Task.async(fn ->
-      port = open_port("yt-dlp", ["-J", uri])
+      port = open_port("yt-dlp", @options ++ ["-J", uri])
 
       os_pid = Port.info(port) |> Keyword.fetch!(:os_pid)
       Process.send_after(self(), {:timeout, os_pid}, timeout)
@@ -14,10 +18,10 @@ defmodule SusBot.Fetcher do
     end)
     |> Task.await(timeout + 1000)
     |> then(fn
-      {:exited, 0, json} ->
+      {:exited, n, json} when n in [0, 1] ->
         Jason.decode(json)
 
-      {:exited, n, _} when n > 0 ->
+      {:exited, n, _} when n > 1 ->
         Logger.error("Fetcher exited with status #{n} accessing #{inspect(uri)}")
         {:error, :fetcher_failed}
 

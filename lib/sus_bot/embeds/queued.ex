@@ -1,13 +1,21 @@
 defmodule SusBot.Embeds.Queued do
   alias Nostrum.Struct.Embed
   alias SusBot.Playlist.Entry
+  alias SusBot.Track
 
-  def generate(%Entry{} = entry) do
+  def generate(%Entry{tracks: [%Track{} = track]}) do
     %Embed{}
     |> Embed.put_title("Track Added")
-    |> Embed.put_description(entry.title)
-    |> Embed.put_url(entry.url)
-    |> maybe_put_thumbnail(entry.thumbnail)
+    |> Embed.put_description(track.title)
+    |> Embed.put_url(track.url)
+    |> maybe_put_thumbnail(track.thumbnail)
+  end
+
+  def generate(%Entry{tracks: tracks}) do
+    count = Enum.count(tracks)
+
+    %Embed{}
+    |> Embed.put_title("#{count} Tracks Added")
   end
 
   defp maybe_put_thumbnail(embed, nil), do: embed

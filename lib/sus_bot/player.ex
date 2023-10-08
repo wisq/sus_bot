@@ -10,7 +10,7 @@ defmodule SusBot.Player do
   defdelegate available?(guild_id), to: P.Lifecycle
   defdelegate start_link(opts), to: P.Lifecycle
 
-  defdelegate append(guild_id, entry, channel_id), to: P.Append
+  defdelegate append(guild_id, channel_id, tracks, user), to: P.Append
   defdelegate skip(guild_id), to: P.Skip
   defdelegate stop(guild_id), to: P.Stop
   defdelegate leave(guild_id), to: P.Leave

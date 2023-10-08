@@ -3,8 +3,10 @@ defmodule SusBot.Player.Playback do
   alias Nostrum.Api, as: Discord
   alias Nostrum.Voice
   alias SusBot.Player.{Common, State}
-  alias SusBot.Playlist
+  alias SusBot.Queue
+  alias SusBot.Queue.Entry
   alias SusBot.Embeds
+  alias SusBot.Track
 
   def wakeup(guild_id) do
     Common.cast(guild_id, :wakeup)
@@ -29,20 +31,45 @@ defmodule SusBot.Player.Playback do
         {:noreply, state}
 
       true ->
-        case Playlist.pop_next(state.playlist) do
-          {entry, new_playlist} ->
-            Logger.debug("[Voice #{state.guild_id}] Playing #{inspect(entry, pretty: true)}")
+        {track, state} = next_track(state)
+
+        case track do
+          %Track{} ->
+            Logger.debug("[Voice #{state.guild_id}] Playing #{inspect(track, pretty: true)}")
 
             c_id = state.config.status_channel
-            Discord.create_message(c_id, embeds: [Embeds.NowPlaying.generate(entry)])
-            Voice.play(state.guild_id, entry.url, entry.play_type)
+            embed = Embeds.NowPlaying.generate(state.now_playing, track)
+            Discord.create_message(c_id, embeds: [embed])
 
-            {:noreply, %State{state | now_playing: entry, playlist: new_playlist}}
+            Voice.play(state.guild_id, track.url, track.play_type)
 
-          :error ->
-            Logger.debug("[Voice #{state.guild_id}] Empty playlist")
-            {:noreply, %State{state | now_playing: nil}}
+            {:noreply, state}
+
+          :empty ->
+            Logger.debug("[Voice #{state.guild_id}] Empty queue")
+            {:noreply, state}
         end
+    end
+  end
+
+  defp next_track(%State{now_playing: %Entry{} = entry} = state) do
+    case Entry.pop_next(entry) do
+      {track, new_entry} ->
+        {track, %State{state | now_playing: new_entry}}
+
+      :error ->
+        %State{state | now_playing: nil} |> next_track()
+    end
+  end
+
+  defp next_track(%State{now_playing: nil} = state) do
+    case Queue.pop_next(state.queue) do
+      {entry, new_queue} ->
+        %State{state | now_playing: entry, queue: new_queue}
+        |> next_track()
+
+      :error ->
+        {:empty, state}
     end
   end
 end

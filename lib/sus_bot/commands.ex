@@ -3,6 +3,7 @@ defmodule SusBot.Commands do
 
   @commands %{
     "susplay" => C.Play,
+    "susskip" => C.Skip,
     "susstop" => C.Stop,
     "susleave" => C.Leave
   }
