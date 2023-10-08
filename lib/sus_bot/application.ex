@@ -16,7 +16,7 @@ defmodule SusBot.Application do
 
   def bot_children() do
     if config(:start_bot) do
-      Application.ensure_all_started([:nosedrum, :nostrum])
+      [:nosedrum, :nostrum] |> Enum.each(&Application.ensure_all_started/1)
 
       [
         {Nosedrum.Storage.Dispatcher, name: Nosedrum.Storage.Dispatcher},
