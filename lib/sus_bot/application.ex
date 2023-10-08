@@ -16,6 +16,8 @@ defmodule SusBot.Application do
 
   def bot_children() do
     if config(:start_bot) do
+      Application.ensure_all_started([:nosedrum, :nostrum])
+
       [
         {Nosedrum.Storage.Dispatcher, name: Nosedrum.Storage.Dispatcher},
         {DynamicSupervisor, name: SusBot.Player.supervisor()},
