@@ -10,7 +10,7 @@ defmodule SusBot.Embeds.Queued do
     |> Embed.put_title("Track Added")
     |> Embed.put_description(track.title)
     |> Embed.put_url(track.url)
-    |> Embed.put_field("Channel", track.channel, true)
+    |> maybe_put_field("Channel", track.channel, true)
     |> maybe_put_thumbnail(track.thumbnail)
   end
 
@@ -22,12 +22,9 @@ defmodule SusBot.Embeds.Queued do
     |> Embed.put_title("Playlist Added")
     |> Embed.put_description(playlist.title)
     |> Embed.put_url(playlist.url)
-    |> Embed.put_field("Channel", playlist.channel, true)
+    |> maybe_put_field("Channel", playlist.channel, true)
     |> Embed.put_field("Tracks", count, true)
     |> Embed.put_field("Duration", format_duration(duration), true)
     |> maybe_put_thumbnail(playlist.thumbnail)
   end
-
-  defp maybe_put_thumbnail(embed, nil), do: embed
-  defp maybe_put_thumbnail(embed, url), do: Embed.put_thumbnail(embed, url)
 end

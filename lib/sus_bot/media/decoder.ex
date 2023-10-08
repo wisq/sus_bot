@@ -12,12 +12,11 @@ defmodule SusBot.Media.Decoder do
 
   defp decode_video(data, play_type) do
     with {:ok, title} <- map_fetch(data, "title"),
-         {:ok, channel} <- map_fetch(data, "channel"),
          {:ok, url} <- map_fetch(data, ["webpage_url", "url"]) do
       {:ok,
        %Track{
          title: title,
-         channel: channel,
+         channel: Map.get(data, "channel"),
          url: url,
          thumbnail: best_thumbnail(data),
          duration: Map.get(data, "duration"),
@@ -88,6 +87,8 @@ defmodule SusBot.Media.Decoder do
     |> Enum.max_by(fn %{"height" => h, "width" => w} -> h * w end)
     |> Map.fetch!("url")
   end
+
+  defp best_thumbnail(%{}), do: nil
 
   defp detect_play_type(%{"extractor" => "generic"}), do: {:ok, :url}
   defp detect_play_type(%{"extractor" => "youtube"}), do: {:ok, :ytdl}
