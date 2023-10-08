@@ -18,10 +18,10 @@ defmodule SusBot.Media.Fetcher do
     end)
     |> Task.await(timeout + 1000)
     |> then(fn
-      {:exited, n, json} when n in [0, 1] ->
+      {:exited, 0, json} ->
         Jason.decode(json)
 
-      {:exited, n, _} when n > 1 ->
+      {:exited, n, _} when n > 0 ->
         Logger.error("Fetcher exited with status #{n} accessing #{inspect(uri)}")
         {:error, :fetcher_failed}
 

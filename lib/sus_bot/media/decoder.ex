@@ -65,8 +65,6 @@ defmodule SusBot.Media.Decoder do
 
   defp enum_map(enum, fun) do
     enum
-    # see https://github.com/yt-dlp/yt-dlp/issues/8206
-    |> Enum.reject(&is_nil/1)
     |> Enum.with_index()
     |> Enum.reduce_while([], fn {elem, index}, acc ->
       case fun.(elem) do
