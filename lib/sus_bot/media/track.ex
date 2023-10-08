@@ -1,4 +1,4 @@
-defmodule SusBot.Track do
+defmodule SusBot.Media.Track do
   @enforce_keys [:title, :url, :play_type]
   defstruct(
     title: nil,

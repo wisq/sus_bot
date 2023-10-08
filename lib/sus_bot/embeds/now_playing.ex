@@ -1,8 +1,8 @@
 defmodule SusBot.Embeds.NowPlaying do
   alias Nostrum.Struct.Embed
 
-  alias SusBot.Playlist.Entry
-  alias SusBot.Track
+  alias SusBot.Queue.Entry
+  alias SusBot.Media.Track
 
   import SusBot.Embeds.Common
 
@@ -14,7 +14,6 @@ defmodule SusBot.Embeds.NowPlaying do
     |> maybe_put_thumbnail(track.thumbnail)
     |> Embed.put_field("Added By", entry.added_by.username, true)
     |> Embed.put_field("Duration", format_duration(track.duration), true)
-    |> IO.inspect()
   end
 
   defp maybe_put_thumbnail(embed, nil), do: embed

@@ -1,22 +1,28 @@
 defmodule SusBot.Queue.Entry do
-  alias SusBot.Track
+  alias SusBot.Media.{Track, Playlist}
   alias Nostrum.Struct.User
   alias __MODULE__
 
-  @enforce_keys [:tracks, :queue, :added_by]
+  @enforce_keys [:media, :queue, :added_by]
   defstruct(
     id: nil,
-    tracks: nil,
+    media: nil,
     queue: nil,
     added_by: nil
   )
 
-  def new(%Track{} = track, %User{} = added_by), do: new([track], added_by)
-
-  def new(tracks, %User{} = added_by) when is_list(tracks) do
+  def new(%Track{} = track, %User{} = added_by) do
     %Entry{
-      tracks: tracks,
-      queue: :queue.from_list(tracks),
+      media: track,
+      queue: [track] |> :queue.from_list(),
+      added_by: added_by
+    }
+  end
+
+  def new(%Playlist{} = playlist, %User{} = added_by) do
+    %Entry{
+      media: playlist,
+      queue: playlist.tracks |> :queue.from_list(),
       added_by: added_by
     }
   end

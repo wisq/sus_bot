@@ -3,7 +3,7 @@ defmodule SusBot.Commands.Play do
   alias Nostrum.Cache.GuildCache
 
   alias SusBot.Player
-  alias SusBot.Track
+  alias SusBot.Media
   alias SusBot.Embeds
 
   @behaviour Nosedrum.ApplicationCommand
@@ -47,8 +47,8 @@ defmodule SusBot.Commands.Play do
 
   defp queue(url, guild_id, user, channel_id) do
     with {:ok, uri} <- parse_http_uri(url),
-         {:ok, json} <- Track.Fetcher.fetch(uri),
-         {:ok, tracks} <- Track.Decoder.decode(json),
+         {:ok, json} <- Media.Fetcher.fetch(uri),
+         {:ok, tracks} <- Media.Decoder.decode(json),
          {:ok, queued} <- Player.append(guild_id, channel_id, tracks, user) do
       [embeds: [Embeds.Queued.generate(queued)]]
     else

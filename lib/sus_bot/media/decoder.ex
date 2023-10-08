@@ -1,5 +1,5 @@
-defmodule SusBot.Track.Decoder do
-  alias SusBot.Track
+defmodule SusBot.Media.Decoder do
+  alias SusBot.Media.{Track, Playlist}
 
   def decode(%{} = data) do
     with {:ok, play_type} <- detect_play_type(data) do
@@ -26,7 +26,6 @@ defmodule SusBot.Track.Decoder do
 
   defp decode_playlist(data, play_type) do
     with {:ok, title} <- map_fetch(data, "title"),
-         {:ok, description} <- map_fetch(data, "description"),
          {:ok, url} <- map_fetch(data, "webpage_url"),
          {:ok, entries} <- map_fetch(data, "entries"),
          {:ok, tracks} <- entries |> enum_map(&decode_video(&1, play_type)) do

@@ -6,7 +6,7 @@ defmodule SusBot.Player.Playback do
   alias SusBot.Queue
   alias SusBot.Queue.Entry
   alias SusBot.Embeds
-  alias SusBot.Track
+  alias SusBot.Media.Track
 
   def wakeup(guild_id) do
     Common.cast(guild_id, :wakeup)

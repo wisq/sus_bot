@@ -1,4 +1,4 @@
-defmodule SusBot.Track.Fetcher do
+defmodule SusBot.Media.Fetcher do
   require Logger
 
   @options [
