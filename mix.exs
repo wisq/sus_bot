@@ -25,7 +25,7 @@ defmodule SusBot.MixProject do
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
       {:nostrum, github: "Kraigie/nostrum", ref: "1ec397f", runtime: false, override: true},
-      {:nosedrum, "~> 0.5", runtime: false},
+      {:nosedrum, github: "wisq/nosedrum", ref: "76494a5", runtime: false},
       {:jason, "~> 1.4"}
     ]
   end
