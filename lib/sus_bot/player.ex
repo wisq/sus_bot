@@ -16,6 +16,9 @@ defmodule SusBot.Player do
   defdelegate leave(guild_id), to: P.Leave
   defdelegate wakeup(guild_id), to: P.Playback
 
+  defdelegate queue(guild_id), to: P.Queue
+  defdelegate delete(guild_id, entry_id), to: P.Queue
+
   @impl true
   defdelegate init(term), to: P.Lifecycle
 
@@ -24,9 +27,13 @@ defmodule SusBot.Player do
     do: P.Append.handle_call({:append, entry}, from, state)
 
   @impl true
-  def handle_call(:stop, from, state), do: P.Stop.handle_call(:stop, from, state)
+  def handle_call(:stop = c, from, state), do: P.Stop.handle_call(c, from, state)
   @impl true
-  def handle_call(:skip, from, state), do: P.Skip.handle_call(:skip, from, state)
+  def handle_call(:skip = c, from, state), do: P.Skip.handle_call(c, from, state)
+  @impl true
+  def handle_call(:queue = c, from, state), do: P.Queue.handle_call(c, from, state)
+  @impl true
+  def handle_call({:delete, _} = c, from, state), do: P.Queue.handle_call(c, from, state)
 
   @impl true
   def handle_cast(:wakeup, state), do: P.Playback.handle_cast(:wakeup, state)

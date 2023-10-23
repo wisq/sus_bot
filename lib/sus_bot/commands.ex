@@ -5,7 +5,9 @@ defmodule SusBot.Commands do
     "susplay" => C.Play,
     "susskip" => C.Skip,
     "susstop" => C.Stop,
-    "susleave" => C.Leave
+    "susleave" => C.Leave,
+    "susqueue" => C.Queue,
+    "susdelete" => C.Delete
   }
 
   def commands, do: @commands
