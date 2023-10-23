@@ -10,7 +10,6 @@ defmodule SusBot.Embeds.Queued do
     |> Embed.put_title("Track Added")
     |> Embed.put_description(track.title)
     |> Embed.put_url(track.url)
-    |> maybe_put_field("Channel", track.channel, true)
     |> maybe_put_thumbnail(track.thumbnail)
   end
 
