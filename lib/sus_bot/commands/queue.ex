@@ -16,14 +16,15 @@ defmodule SusBot.Commands.Queue do
   @impl true
   def command(%Interaction{} = inter) do
     case Player.queue(inter.guild_id) do
-      {:ok, queue} -> [content: generate_reply(queue), ephemeral?: true]
+      {:ok, q} -> [content: Queue.to_list(q) |> generate_reply(), ephemeral?: true]
       {:error, :not_running} -> [content: "Not currently active.", ephemeral?: true]
     end
   end
 
-  defp generate_reply(%Queue{} = queue) do
-    queue
-    |> Queue.to_list()
+  defp generate_reply([]), do: "Nothing is playing at the moment."
+
+  defp generate_reply(list) do
+    list
     |> Enum.map(fn
       %Entry{id: id, media: media} -> "- **#{id}:** #{describe_media(media)}"
     end)
