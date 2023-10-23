@@ -2,20 +2,20 @@ defmodule SusBot.Queue do
   alias __MODULE__
   alias SusBot.Queue.Entry
 
-  defstruct(queue: :queue.new())
+  defstruct(q: :queue.new())
 
   def new, do: %Queue{}
 
-  defp wrap(queue) when is_tuple(queue), do: %Queue{queue: queue}
+  defp wrap({_, _} = queue), do: %Queue{q: queue}
 
-  def append(%Queue{} = queue, %Entry{} = entry) do
-    :queue.in(entry, queue.queue)
+  def append(%Queue{q: q}, %Entry{} = entry) do
+    :queue.in(entry, q)
     |> wrap()
   end
 
-  def pop_next(%Queue{} = queue) do
-    case :queue.out(queue.queue) do
-      {{:value, entry}, queue} -> {entry, wrap(queue)}
+  def pop_next(%Queue{q: q}) do
+    case :queue.out(q) do
+      {{:value, entry}, q} -> {entry, wrap(q)}
       {:empty, _} -> :error
     end
   end
