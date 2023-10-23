@@ -25,6 +25,11 @@ defmodule SusBot.Consumer do
   end
 
   @impl true
+  def handle_event({:VOICE_STATE_UPDATE, event, _ws_state}) do
+    C.VoiceStateUpdate.handle(event)
+  end
+
+  @impl true
   def handle_event({event, _, _}) do
     Logger.debug("#{event}")
   end
