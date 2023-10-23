@@ -55,7 +55,8 @@ defmodule SusBot.Consumer.GuildAvailable do
     end
 
     # Delay between register events, to avoid throttle timeouts.
-    Process.sleep(1000)
+    Enum.random(2000..4000)
+    |> Process.sleep()
   end
 
   defp command_name(name, module) when is_atom(module), do: cname(name, module.type())
