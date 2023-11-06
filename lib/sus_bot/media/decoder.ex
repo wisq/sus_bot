@@ -19,7 +19,7 @@ defmodule SusBot.Media.Decoder do
          channel: Map.get(data, "channel"),
          url: url,
          thumbnail: best_thumbnail(data),
-         duration: Map.get(data, "duration"),
+         duration: Map.get(data, "duration") |> to_duration(),
          play_type: play_type
        }}
     end
@@ -90,10 +90,14 @@ defmodule SusBot.Media.Decoder do
 
   defp detect_play_type(%{"extractor" => "generic"}), do: {:ok, :url}
   defp detect_play_type(%{"extractor" => "youtube"}), do: {:ok, :ytdl}
+  defp detect_play_type(%{"extractor" => "soundcloud"}), do: {:ok, :ytdl}
   defp detect_play_type(%{"extractor" => "youtube:tab"}), do: {:ok, :ytdl}
   defp detect_play_type(%{"extractor" => "twitch:stream"}), do: {:ok, :stream}
 
   defp detect_play_type(%{"extractor" => ex}) do
     {:error, "Unknown site / file format: #{inspect(ex)}"}
   end
+
+  defp to_duration(d) when is_integer(d), do: d
+  defp to_duration(d) when is_float(d), do: ceil(d)
 end
