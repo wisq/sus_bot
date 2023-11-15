@@ -42,8 +42,7 @@ defmodule SusBot.Player.Lifecycle do
         {:noreply, state}
 
       false ->
-        state.config.status_channel
-        |> Discord.create_message("Failed to join channel #{channel}.")
+        "Failed to join channel #{channel}." |> Common.status_message(state)
 
         {:stop, :normal, state}
     end

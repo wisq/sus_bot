@@ -1,6 +1,5 @@
 defmodule SusBot.Player.Playback do
   require Logger
-  alias Nostrum.Api, as: Discord
   alias Nostrum.Voice
   alias SusBot.Player.{Common, State}
   alias SusBot.Queue
@@ -37,9 +36,8 @@ defmodule SusBot.Player.Playback do
           %Track{} ->
             Logger.debug("[Voice #{state.guild_id}] Playing #{inspect(track, pretty: true)}")
 
-            c_id = state.config.status_channel
-            embed = Embeds.NowPlaying.generate(state.now_playing, track)
-            Discord.create_message(c_id, embeds: [embed])
+            [embeds: [Embeds.NowPlaying.generate(state.now_playing, track)]]
+            |> Common.status_message(state)
 
             Voice.play(state.guild_id, track.url, track.play_type)
 

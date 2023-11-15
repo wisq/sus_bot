@@ -1,4 +1,6 @@
 defmodule SusBot.Player.Common do
+  alias Nostrum.Api, as: Discord
+
   def player_name(guild_id) when is_integer(guild_id) do
     :"susbot_player_#{guild_id}"
   end
@@ -13,5 +15,10 @@ defmodule SusBot.Player.Common do
     catch
       :exit, {:noproc, _} -> {:error, :not_running}
     end
+  end
+
+  def status_message(message, state) do
+    state.config.status_channel
+    |> Discord.create_message(message)
   end
 end
