@@ -19,26 +19,50 @@ defmodule SusBot.Player.Lifecycle do
   end
 
   def init({guild_id, channel_id, config}) do
-    ensure_channel_cached(channel_id)
-    Voice.join_channel(guild_id, channel_id)
+    with {:ok, channel} <- ensure_channel_cached(channel_id) do
+      Voice.join_channel(guild_id, channel_id)
 
-    {:ok,
-     %State{
-       guild_id: guild_id,
-       config: config
-     }}
+      Process.send_after(self(), {:assert_ready, channel}, 10000)
+
+      {:ok,
+       %State{
+         guild_id: guild_id,
+         config: config
+       }}
+    end
   end
 
   def terminate(_reason, state) do
     Voice.leave_channel(state.guild_id)
   end
 
+  def handle_info({:assert_ready, channel}, state) do
+    case Voice.ready?(state.guild_id) do
+      true ->
+        {:noreply, state}
+
+      false ->
+        state.config.status_channel
+        |> Discord.create_message("Failed to join channel #{channel}.")
+
+        {:stop, :normal, state}
+    end
+  end
+
   # Voice requires the channel be cached,
   # and for some reason, that's not happening automatically.
   defp ensure_channel_cached(channel_id) do
     case ChannelCache.get(channel_id) do
-      {:ok, _} -> :ok
-      {:error, :not_found} -> Discord.get_channel!(channel_id) |> ChannelCache.create()
+      {:ok, channel} ->
+        {:ok, channel}
+
+      {:error, :not_found} ->
+        with {:ok, channel} <- Discord.get_channel(channel_id) do
+          ChannelCache.create(channel)
+          {:ok, channel}
+        else
+          {:error, %Nostrum.Error.ApiError{status_code: 403}} -> {:error, :missing_access}
+        end
     end
   end
 end

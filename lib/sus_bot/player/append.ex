@@ -30,6 +30,7 @@ defmodule SusBot.Player.Append do
     case DynamicSupervisor.start_child(@supervisor, {Player, opts}) do
       {:ok, pid} -> {:ok, pid}
       {:error, {:already_started, pid}} -> {:ok, pid}
+      {:error, :missing_access} = err -> err
     end
   end
 end

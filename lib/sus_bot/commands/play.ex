@@ -52,6 +52,7 @@ defmodule SusBot.Commands.Play do
          {:ok, queued} <- Player.append(guild_id, channel_id, tracks, user) do
       [embeds: [Embeds.Queued.generate(queued)]]
     else
+      {:error, :missing_access} -> [content: "Cannot access channel <##{channel_id}>."]
       e -> [content: "```\n#{inspect(e, pretty: true)}\n```"]
     end
   end

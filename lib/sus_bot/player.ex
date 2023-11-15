@@ -42,5 +42,9 @@ defmodule SusBot.Player do
   def handle_continue(:play_next, state), do: P.Playback.handle_continue(:play_next, state)
 
   @impl true
+  def handle_info({:assert_ready, channel}, state),
+    do: P.Lifecycle.handle_info({:assert_ready, channel}, state)
+
+  @impl true
   defdelegate terminate(reason, state), to: P.Lifecycle
 end
