@@ -98,6 +98,7 @@ defmodule SusBot.Media.Decoder do
     {:error, "Unknown site / file format: #{inspect(ex)}"}
   end
 
+  defp to_duration(nil), do: nil
   defp to_duration(d) when is_integer(d), do: d
   defp to_duration(d) when is_float(d), do: ceil(d)
 end
