@@ -14,7 +14,7 @@ defmodule SusBot.Commands.Skip do
   def command(%Interaction{} = inter) do
     case Player.skip(inter.guild_id) do
       :ok -> [content: "Track skipped."]
-      {:error, :not_playing} -> [content: "Nothing is currently playing.", ephemeral?: true]
+      {:error, :stopped} -> [content: "Nothing is currently playing.", ephemeral?: true]
       {:error, :not_running} -> [content: "Not currently active.", ephemeral?: true]
     end
   end

@@ -14,7 +14,7 @@ defmodule SusBot.Commands.Stop do
   def command(%Interaction{} = inter) do
     case Player.stop(inter.guild_id) do
       :ok -> [content: "Playback stopped."]
-      {:error, :not_playing} -> [content: "Nothing is currently playing.", ephemeral?: true]
+      {:error, :stopped} -> [content: "Nothing is currently playing.", ephemeral?: true]
       {:error, :not_running} -> [content: "Not currently active.", ephemeral?: true]
     end
   end
