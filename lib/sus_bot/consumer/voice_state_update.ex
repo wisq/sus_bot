@@ -1,5 +1,6 @@
 defmodule SusBot.Consumer.VoiceStateUpdate do
   require Logger
+  alias SusBot.Player
 
   @behaviour SusBot.ConsumerEvent
 
@@ -16,11 +17,16 @@ defmodule SusBot.Consumer.VoiceStateUpdate do
       case others do
         [] ->
           Logger.info("Alone in channel #{channel_id}, shutting down player.")
-          SusBot.Player.leave(event.guild_id)
+          Player.leave(event.guild_id)
 
         _ ->
           Logger.debug("users in channel: #{inspect(others)}")
       end
+    else
+      {:error, :not_active} ->
+        if Player.leave(event.guild_id) == :ok do
+          Logger.warning("Player for guild #{event.guild_id} got forcibly disconnected.")
+        end
     end
   end
 
