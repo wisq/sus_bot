@@ -1,4 +1,5 @@
 defmodule SusBot.Player.Lifecycle do
+  require Logger
   alias Nostrum.Api, as: Discord
   alias Nostrum.Voice
   alias Nostrum.Cache.ChannelCache
@@ -32,7 +33,24 @@ defmodule SusBot.Player.Lifecycle do
     end
   end
 
-  def terminate(_reason, state) do
+  def shutdown(guild_id, reason) do
+    try do
+      :ok = Common.player_name(guild_id) |> GenServer.stop({:shutdown, reason})
+    catch
+      :exit, {:noproc, _} -> {:error, :not_running}
+    end
+  end
+
+  def terminate(reason, state) do
+    case reason do
+      {:shutdown, :voice_disconnected} ->
+        Logger.warning("Player for guild #{state.guild_id} got forcibly disconnected.")
+        "Lost voice connection; player terminated." |> Common.status_message(state)
+
+      _ ->
+        :noop
+    end
+
     Voice.leave_channel(state.guild_id)
   end
 

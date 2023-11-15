@@ -9,11 +9,12 @@ defmodule SusBot.Player do
 
   defdelegate available?(guild_id), to: P.Lifecycle
   defdelegate start_link(opts), to: P.Lifecycle
+  defdelegate shutdown(guild_id, reason), to: P.Lifecycle
+  def leave(guild_id), do: shutdown(guild_id, :leave)
 
   defdelegate append(guild_id, channel_id, tracks, user), to: P.Append
   defdelegate skip(guild_id), to: P.Skip
   defdelegate stop(guild_id), to: P.Stop
-  defdelegate leave(guild_id), to: P.Leave
   defdelegate wakeup(guild_id), to: P.Playback
 
   defdelegate queue(guild_id), to: P.Queue

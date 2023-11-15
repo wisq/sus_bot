@@ -23,10 +23,7 @@ defmodule SusBot.Consumer.VoiceStateUpdate do
           Logger.debug("users in channel: #{inspect(others)}")
       end
     else
-      {:error, :not_active} ->
-        if Player.leave(event.guild_id) == :ok do
-          Logger.warning("Player for guild #{event.guild_id} got forcibly disconnected.")
-        end
+      {:error, :not_active} -> Player.shutdown(event.guild_id, :voice_disconnected)
     end
   end
 
