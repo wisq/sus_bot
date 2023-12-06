@@ -15,7 +15,7 @@ defmodule SusBot.Embeds.Queued do
 
   def generate(%Entry{media: %Playlist{} = playlist}) do
     count = Enum.count(playlist.tracks)
-    duration = playlist.tracks |> Enum.map(& &1.duration) |> Enum.sum()
+    durations = playlist.tracks |> Enum.map(& &1.duration)
 
     %Embed{}
     |> Embed.put_title("Playlist Added")
@@ -23,7 +23,26 @@ defmodule SusBot.Embeds.Queued do
     |> Embed.put_url(playlist.url)
     |> maybe_put_field("Channel", playlist.channel, true)
     |> Embed.put_field("Tracks", count, true)
-    |> Embed.put_field("Duration", format_duration(duration), true)
+    |> Embed.put_field("Duration", maybe_duration(durations), true)
     |> maybe_put_thumbnail(playlist.thumbnail)
+  end
+
+  defp maybe_duration(durations) do
+    cond do
+      Enum.all?(durations, &is_nil/1) ->
+        format_duration(nil)
+
+      Enum.any?(durations, &is_nil/1) ->
+        durations
+        |> Enum.reject(&is_nil/1)
+        |> Enum.sum()
+        |> format_duration()
+        |> then(fn t -> "at least #{t}" end)
+
+      true ->
+        durations
+        |> Enum.sum()
+        |> format_duration()
+    end
   end
 end
