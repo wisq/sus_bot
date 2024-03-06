@@ -3,7 +3,7 @@ defmodule SusBot.Application do
   use Application
 
   def start(_type, _args) do
-    children = bot_children() ++ test_children()
+    children = bot_children() ++ SusBot.HealthCheck.children() ++ test_children()
 
     options = [strategy: :rest_for_one, name: SusBot.Supervisor]
     Supervisor.start_link(children, options)
