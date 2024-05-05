@@ -2,7 +2,7 @@ defmodule SusBot.Player.Lifecycle do
   require Logger
   alias Nostrum.Api, as: Discord
   alias Nostrum.Voice
-  alias Nostrum.Cache.ChannelCache
+  alias Nostrum.Cache.GuildCache
   alias SusBot.Player
   alias SusBot.Player.{Common, Config, State}
 
@@ -20,7 +20,8 @@ defmodule SusBot.Player.Lifecycle do
   end
 
   def init({guild_id, channel_id, config}) do
-    with {:ok, channel} <- ensure_channel_cached(channel_id) do
+    with {:ok, guild} <- GuildCache.get(guild_id),
+         {:ok, channel} <- guild.channels |> Map.fetch(channel_id) do
       Voice.join_channel(guild_id, channel_id)
 
       Process.send_after(self(), {:assert_ready, channel}, 10000)
@@ -63,23 +64,6 @@ defmodule SusBot.Player.Lifecycle do
         "Failed to join channel #{channel}." |> Common.status_message(state)
 
         {:stop, :normal, state}
-    end
-  end
-
-  # Voice requires the channel be cached,
-  # and for some reason, that's not happening automatically.
-  defp ensure_channel_cached(channel_id) do
-    case ChannelCache.get(channel_id) do
-      {:ok, channel} ->
-        {:ok, channel}
-
-      {:error, :not_found} ->
-        with {:ok, channel} <- Discord.get_channel(channel_id) do
-          ChannelCache.create(channel)
-          {:ok, channel}
-        else
-          {:error, %Nostrum.Error.ApiError{status_code: 403}} -> {:error, :missing_access}
-        end
     end
   end
 end
