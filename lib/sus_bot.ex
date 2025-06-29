@@ -1,18 +1,6 @@
 defmodule SusBot do
-  @moduledoc """
-  Documentation for `SusBot`.
-  """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> SusBot.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  def token do
+    Application.fetch_env!(:sus_bot, :token)
+    |> IO.inspect()
   end
 end

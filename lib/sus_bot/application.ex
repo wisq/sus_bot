@@ -16,9 +16,16 @@ defmodule SusBot.Application do
 
   def bot_children() do
     if config(:start_bot) do
+      bot_options = %{
+        consumer: SusBot.Consumer,
+        intents: :nonprivileged,
+        wrapped_token: &SusBot.token/0
+      }
+
       [:nosedrum, :nostrum] |> Enum.each(&Application.ensure_all_started/1)
 
       [
+        {Nostrum.Bot, bot_options},
         {Nosedrum.Storage.Dispatcher, name: Nosedrum.Storage.Dispatcher},
         {DynamicSupervisor, name: SusBot.Player.supervisor()},
         SusBot.Consumer

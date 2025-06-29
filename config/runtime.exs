@@ -2,7 +2,7 @@ import Config
 alias SusBot.Secrets
 
 unless config_env() == :test do
-  config :nostrum, token: Secrets.fetch!("DISCORD_BOT_TOKEN")
+  config :sus_bot, token: Secrets.fetch!("DISCORD_BOT_TOKEN")
 end
 
 case System.fetch_env("APP_MODE") do

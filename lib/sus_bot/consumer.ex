@@ -1,8 +1,13 @@
 defmodule SusBot.Consumer do
-  use Nostrum.Consumer
+  @behaviour Nostrum.Consumer
+  use GenServer
   require Logger
 
   alias SusBot.Consumer, as: C
+
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, [], opts)
+  end
 
   @impl true
   def handle_event({:GUILD_AVAILABLE, guild, _ws_state}) do
